@@ -18,8 +18,8 @@ from langchain_community.document_loaders import (
 from langchain_core.documents import Document
 
 
-DATA_DIR = Path(__file__).parent.parent / "data"
-DATA_DIR.mkdir(exist_ok=True)
+DATA_DIR = Path(os.environ.get("DATA_DIR", "/tmp/bernd_data"))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def save_upload(file_name: str, file_bytes: bytes) -> Path:
