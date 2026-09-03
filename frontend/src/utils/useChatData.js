@@ -290,7 +290,7 @@ export default function useChatData() {
     });
   };
 
-  const MAX_FILE_SIZE_MB = 50;
+  const MAX_FILE_SIZE_MB = 4;
   const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
   const handleUpload = async (files) => {
