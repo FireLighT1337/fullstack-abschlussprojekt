@@ -1,7 +1,7 @@
 {
   "services": {
     "frontend": {
-      "root": "chatbot",
+      "root": "frontend",
       "framework": "create-react-app",
       "outputDirectory": "build"
     },
