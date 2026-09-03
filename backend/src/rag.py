@@ -17,7 +17,6 @@ Environment variables:
 import os
 from typing import List, Optional
 
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
@@ -25,6 +24,13 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 from . import store
+
+# -- Cache Directory Configuration --------------------------------------------
+# HuggingFace cache dir: use /tmp on Vercel, default locally
+HF_CACHE_DIR = os.environ.get("HF_HOME", "/tmp/hf_cache")
+os.makedirs(HF_CACHE_DIR, exist_ok=True)
+os.environ.setdefault("HF_HOME", HF_CACHE_DIR)
+os.environ.setdefault("TRANSFORMERS_CACHE", HF_CACHE_DIR)
 
 
 # -- Configuration -------------------------------------------------------------
@@ -42,17 +48,19 @@ LLM_MODEL = os.environ.get("LLM_MODEL") or _DEFAULT_MODELS.get(LLM_PROVIDER, "op
 
 # -- Global RAG state ----------------------------------------------------------
 _vectorstore: Optional[Chroma] = None
-_embeddings: Optional[HuggingFaceEmbeddings] = None
+_embeddings = None
 _llm = None
 
 
-def _get_embeddings() -> HuggingFaceEmbeddings:
+def _get_embeddings():
     """Free, local HuggingFace embeddings. No API key needed."""
     global _embeddings
     if _embeddings is None:
+        from langchain_huggingface import HuggingFaceEmbeddings
         # all-MiniLM-L6-v2 is small (~80MB), fast, and good quality
         _embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2",
+            cache_folder=HF_CACHE_DIR,
             model_kwargs={"device": "cpu"},
             encode_kwargs={"normalize_embeddings": True},
         )

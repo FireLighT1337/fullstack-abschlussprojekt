@@ -1,0 +1,8 @@
+# Exclude data files and heavy model caches from the deployment bundle
+backend/data/
+backend/venv/
+backend/__pycache__/
+backend/src/__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
