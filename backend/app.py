@@ -1,6 +1,10 @@
 """B.E.R.N.D. Backend - FastAPI entrypoint for Vercel Services.
 
 Exports `app` for Vercel to run directly. No `.listen()` call here.
+
+All heavy imports (langchain, chromadb, sentence-transformers) are deferred
+until the first request that actually needs them. This keeps the cold-start
+import footprint tiny and avoids Vercel build issues.
 """
 
 import os
@@ -12,7 +16,6 @@ from typing import Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from src import store
 from src.models import (
@@ -27,8 +30,6 @@ from src.models import (
     WSError,
 )
 from src.documents import save_upload, detect_mime_from_name, load_documents
-from src.rag import ingest_documents, _generate_answer_sync, LLM_PROVIDER, LLM_MODEL
-
 
 # -- FastAPI app ---------------------------------------------------------------
 app = FastAPI(title="B.E.R.N.D. Backend", version="1.0.0")
@@ -42,6 +43,21 @@ app.add_middleware(
 )
 
 
+# -- Lazy RAG module loading ---------------------------------------------------
+# We defer importing rag.py until the first request that needs it.
+# This avoids importing chromadb, sentence-transformers, etc. at module level.
+_rag_module = None
+
+def _get_rag():
+    global _rag_module
+    if _rag_module is None:
+        print("[APP] Loading RAG module (first time)...")
+        from src import rag
+        _rag_module = rag
+        print("[APP] RAG module loaded.")
+    return _rag_module
+
+
 # -- Health & config checks ----------------------------------------------------
 @app.get("/")
 async def root():
@@ -51,9 +67,10 @@ async def root():
 @app.get("/config")
 async def config():
     """Return current LLM provider config (safe - no API keys exposed)."""
+    rag = _get_rag()
     return {
-        "llm_provider": LLM_PROVIDER,
-        "llm_model": LLM_MODEL,
+        "llm_provider": rag.LLM_PROVIDER,
+        "llm_model": rag.LLM_MODEL,
         "rag_ready": True,
     }
 
@@ -61,11 +78,7 @@ async def config():
 # -- Ticket endpoint (no auth required anymore) --------------------------------
 @app.post("/chat/auth/ticket", response_model=TicketResponse)
 async def auth_ticket():
-    """Return a short-lived ticket for WebSocket connection.
-    
-    The frontend still calls this endpoint and sends the ticket as a WS
-    query param. We accept any ticket since Azure AD has been removed.
-    """
+    """Return a short-lived ticket for WebSocket connection."""
     ticket = str(uuid.uuid4())
     return TicketResponse(ticket=ticket)
 
@@ -73,11 +86,7 @@ async def auth_ticket():
 # -- File upload endpoint ------------------------------------------------------
 @app.post("/files/upload")
 async def upload_file(file: UploadFile = File(...)):
-    """Accept PDF, Excel, PowerPoint, Word, text, and images.
-    
-    Extracts text from supported documents and adds them to the RAG vector store.
-    Images are saved but not processed for text in this MVP.
-    """
+    """Accept PDF, Excel, PowerPoint, Word, text, and images."""
     MAX_SIZE_MB = 50
     MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
 
@@ -92,7 +101,8 @@ async def upload_file(file: UploadFile = File(...)):
     # Extract text and ingest into RAG (skip images)
     docs = load_documents(saved_path, mime)
     if docs:
-        chunk_count = ingest_documents(docs)
+        rag = _get_rag()
+        chunk_count = rag.ingest_documents(docs)
         print(f"[RAG] Ingested {chunk_count} chunks from {file.filename}")
     else:
         print(f"[RAG] No text extracted from {file.filename} (type: {mime})")
@@ -111,14 +121,7 @@ async def upload_file(file: UploadFile = File(...)):
 # -- WebSocket endpoint --------------------------------------------------------
 @app.websocket("/chat")
 async def websocket_chat(websocket: WebSocket, ticket: Optional[str] = None):
-    """Main WebSocket endpoint for real-time chat.
-    
-    Message types from client:
-      - GetConversationList
-      - GetConversation      (conversation_id may be null)
-      - message              (conversation_id may be null)
-      - DeleteConversation
-    """
+    """Main WebSocket endpoint for real-time chat."""
     await websocket.accept()
     print(f"[WS] Client connected (ticket={ticket})")
 
@@ -164,13 +167,11 @@ async def websocket_chat(websocket: WebSocket, ticket: Optional[str] = None):
                             ],
                         )
                     else:
-                        # Conversation not found - return empty
                         response = WSConversation(
                             conversation_id=cid,
                             messages=[],
                         )
                 else:
-                    # New/local conversation - return empty
                     response = WSConversation(
                         conversation_id="",
                         messages=[],
@@ -188,30 +189,26 @@ async def websocket_chat(websocket: WebSocket, ticket: Optional[str] = None):
                     )
                     continue
 
-                # Create new conversation if cid is null / missing
                 if not cid:
                     cid = store.create_conversation()
 
                 conv = store.get_conversation(cid)
                 if not conv:
-                    # Should not happen after create, but guard anyway
                     cid = store.create_conversation()
                     conv = store.get_conversation(cid)
 
-                # Store user message
                 store.add_message(cid, "user", user_text)
 
-                # Build history for RAG (last 10 messages)
                 history = [
                     {"role": m.role, "content": m.content}
                     for m in conv.messages[:-1]
                 ][-10:]
 
-                # Generate assistant response via RAG
                 try:
                     print(f"[WS] Generating answer for conv={cid}...")
+                    rag = _get_rag()
                     answer = await asyncio.wait_for(
-                        asyncio.to_thread(_generate_answer_sync, user_text, history),
+                        asyncio.to_thread(rag._generate_answer_sync, user_text, history),
                         timeout=60.0,
                     )
                     print(f"[WS] Answer generated ({len(answer)} chars).")
@@ -234,11 +231,9 @@ async def websocket_chat(websocket: WebSocket, ticket: Optional[str] = None):
                         "Bitte versuchen Sie es spater noch einmal."
                     )
 
-                # Store assistant message
                 ts = datetime.utcnow().isoformat()
                 store.add_message(cid, "assistant", answer)
 
-                # Send bot reply to client
                 response = WSBotMessage(
                     conversation_id=cid,
                     message=answer,
