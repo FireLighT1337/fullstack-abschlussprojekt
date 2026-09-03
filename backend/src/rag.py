@@ -51,10 +51,13 @@ _llm = None
 
 
 def _get_embeddings():
-    """Remote HuggingFace Inference API embeddings. No local torch needed."""
+    """Remote embeddings via huggingface_hub's InferenceClient (new router-based
+    Inference Providers API — the old api-inference.huggingface.co domain
+    was decommissioned by HF)."""
     global _embeddings
     if _embeddings is None:
-        from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
+        from huggingface_hub import InferenceClient
+        from langchain_core.embeddings import Embeddings
 
         hf_token = os.environ.get("HF_TOKEN")
         if not hf_token:
@@ -62,10 +65,20 @@ def _get_embeddings():
                 "HF_TOKEN environment variable is not set. "
                 "Get a free token at https://huggingface.co/settings/tokens"
             )
-        _embeddings = HuggingFaceInferenceAPIEmbeddings(
-            api_key=hf_token,
-            model_name=EMBEDDING_MODEL,
-        )
+
+        client = InferenceClient(token=hf_token, provider="hf-inference")
+
+        class _HFInferenceEmbeddings(Embeddings):
+            def embed_documents(self, texts: List[str]) -> List[List[float]]:
+                return [
+                    client.feature_extraction(text, model=EMBEDDING_MODEL).tolist()
+                    for text in texts
+                ]
+
+            def embed_query(self, text: str) -> List[float]:
+                return client.feature_extraction(text, model=EMBEDDING_MODEL).tolist()
+
+        _embeddings = _HFInferenceEmbeddings()
     return _embeddings
 
 
