@@ -5,13 +5,15 @@ Supports multiple LLM providers (no OpenAI subscription required):
   - Google Gemini (free tier, 1,500 req/day)
   - Ollama      (local, dev only - does NOT work on Vercel)
 
-Embeddings use HuggingFace (free, local, no API key).
+Embeddings use the HuggingFace Inference API (free tier, remote —
+no local torch/sentence-transformers, keeps the Vercel bundle small).
 
 Environment variables:
   LLM_PROVIDER=groq|gemini|ollama    (default: groq)
   GROQ_API_KEY=gsk_...              (required if provider=groq)
   GEMINI_API_KEY=...                (required if provider=gemini)
   LLM_MODEL=...                     (optional, provider-specific defaults)
+  HF_TOKEN=hf_...                   (required - HuggingFace Inference API token)
 """
 
 import os
@@ -25,18 +27,10 @@ from langchain_core.output_parsers import StrOutputParser
 
 from . import store
 
-# -- Cache Directory Configuration --------------------------------------------
-# HuggingFace cache dir: use /tmp on Vercel, default locally
-HF_CACHE_DIR = os.environ.get("HF_HOME", "/tmp/hf_cache")
-os.makedirs(HF_CACHE_DIR, exist_ok=True)
-os.environ.setdefault("HF_HOME", HF_CACHE_DIR)
-os.environ.setdefault("TRANSFORMERS_CACHE", HF_CACHE_DIR)
-
 
 # -- Configuration -------------------------------------------------------------
 LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "groq").lower()
 
-# Default models per provider
 _DEFAULT_MODELS = {
     "groq": "openai/gpt-oss-20b",
     "gemini": "gemini-1.5-flash",
@@ -44,6 +38,10 @@ _DEFAULT_MODELS = {
 }
 
 LLM_MODEL = os.environ.get("LLM_MODEL") or _DEFAULT_MODELS.get(LLM_PROVIDER, "openai/gpt-oss-20b")
+
+EMBEDDING_MODEL = os.environ.get(
+    "EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
+)
 
 
 # -- Global RAG state ----------------------------------------------------------
@@ -53,16 +51,20 @@ _llm = None
 
 
 def _get_embeddings():
-    """Free, local HuggingFace embeddings. No API key needed."""
+    """Remote HuggingFace Inference API embeddings. No local torch needed."""
     global _embeddings
     if _embeddings is None:
-        from langchain_huggingface import HuggingFaceEmbeddings
-        # all-MiniLM-L6-v2 is small (~80MB), fast, and good quality
-        _embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2",
-            cache_folder=HF_CACHE_DIR,
-            model_kwargs={"device": "cpu"},
-            encode_kwargs={"normalize_embeddings": True},
+        from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
+
+        hf_token = os.environ.get("HF_TOKEN")
+        if not hf_token:
+            raise RuntimeError(
+                "HF_TOKEN environment variable is not set. "
+                "Get a free token at https://huggingface.co/settings/tokens"
+            )
+        _embeddings = HuggingFaceInferenceAPIEmbeddings(
+            api_key=hf_token,
+            model_name=EMBEDDING_MODEL,
         )
     return _embeddings
 
@@ -92,102 +94,3 @@ def _get_llm():
         raise RuntimeError(f"Unknown LLM_PROVIDER: {LLM_PROVIDER}. Use: groq, gemini, or ollama.")
 
     return _llm
-
-
-def _get_vectorstore() -> Chroma:
-    global _vectorstore
-    if _vectorstore is None:
-        _vectorstore = Chroma(
-            embedding_function=_get_embeddings(),
-            collection_name="bernd_kb",
-        )
-    return _vectorstore
-
-
-def ingest_documents(docs: List[Document]) -> int:
-    """Split and embed documents into the vector store. Returns chunk count."""
-    if not docs:
-        return 0
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-    )
-    chunks = text_splitter.split_documents(docs)
-
-    if not chunks:
-        return 0
-
-    vs = _get_vectorstore()
-    vs.add_documents(chunks)
-    return len(chunks)
-
-
-def has_documents() -> bool:
-    """True if the vector store contains any documents."""
-    vs = _get_vectorstore()
-    try:
-        return vs._collection.count() > 0
-    except Exception:
-        return False
-
-
-def _generate_answer_sync(question: str, history: List[dict]) -> str:
-    """Synchronous RAG generation. Must be called in a thread pool."""
-    llm = _get_llm()
-
-    # Build conversation history string
-    history_lines = []
-    for h in history:
-        role = "User" if h.get("role") == "user" else "Assistant"
-        history_lines.append(f"{role}: {h.get('content', '')}")
-    history_text = "\n".join(history_lines[-10:])
-
-    print(f"[RAG] has_documents={has_documents()}, history_len={len(history)}")
-
-    if has_documents():
-        print("[RAG] Retrieving relevant chunks...")
-        vs = _get_vectorstore()
-        retriever = vs.as_retriever(search_kwargs={"k": 5})
-        retrieved_docs = retriever.invoke(question)
-        print(f"[RAG] Retrieved {len(retrieved_docs)} chunks.")
-        context = "\n\n".join([doc.page_content for doc in retrieved_docs])
-
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are B.E.R.N.D., a helpful AI assistant. Use the provided context to answer. If you don't know, say so. Be concise and helpful."),
-            ("human", """Conversation history:
-{history}
-
-Retrieved context:
-{context}
-
-Question: {question}
-Answer:"""),
-        ])
-
-        print("[RAG] Calling LLM...")
-        chain = prompt | llm | StrOutputParser()
-        answer = chain.invoke({
-            "history": history_text,
-            "context": context,
-            "question": question,
-        })
-        print(f"[RAG] LLM responded ({len(answer)} chars).")
-        return answer
-
-    else:
-        # No documents yet - plain LLM with history
-        print("[RAG] No documents, using plain LLM...")
-        from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-
-        messages = [SystemMessage(content="You are B.E.R.N.D., a helpful AI assistant. Answer concisely and helpfully.")]
-        for h in history:
-            if h.get("role") == "user":
-                messages.append(HumanMessage(content=h.get("content", "")))
-            else:
-                messages.append(AIMessage(content=h.get("content", "")))
-        messages.append(HumanMessage(content=question))
-
-        response = llm.invoke(messages)
-        print(f"[RAG] LLM responded ({len(response.content)} chars).")
-        return response.content
