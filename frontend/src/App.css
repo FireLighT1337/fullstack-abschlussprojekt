@@ -1,0 +1,189 @@
+.orbitron-font {
+	font-family: "Orbitron", sans-serif;
+	font-optical-sizing: auto;
+	font-weight: 600;
+	font-style: normal;
+}
+
+.pt-sans-regular {
+	font-family: "PT Sans", sans-serif;
+	font-weight: 600;
+	font-style: normal;
+}
+
+.pt-sans-bold {
+	font-family: "PT Sans", sans-serif;
+	font-weight: 700;
+	font-style: normal;
+}
+
+main {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+}
+
+.title {
+	position: absolute;
+	left: 40%;
+	transform: translateY(-20%);
+}
+
+body {
+	margin: 0px;
+	background-color: darkgray;
+}
+
+/* Fullscreen centered container used for loading and login */
+.fullscreen-center {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+	background: white;
+}
+
+/* Login button */
+.login-button {
+	padding: 12px 24px;
+	font-size: 16px;
+	color: white;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.login-button.enabled {
+	background: #1890ff; /* Ant Design primary blue */
+}
+
+.login-button.disabled {
+	background: #d9d9d9;
+	cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+	.message-container {
+		min-width: 50vh;
+	}
+
+	.input-container {
+		min-width: 50vh;
+	}
+
+	#user-input {
+		flex-basis: 65%;
+		max-width: 35vh;
+	}
+}
+
+.chat-header {
+	background: #000;
+	color: #fff;
+	padding: 0;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.message-scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 24px;
+}
+
+.chat-input {
+	background: #d2e0e8;
+	padding: 12px 16px;
+	border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.message-scroll .message {
+	max-width: 68ch;
+	word-break: break-word;
+}
+
+.app-root {
+	height: 100vh;
+	background: #2f6174;
+}
+
+.app-sider {
+	width: 280px !important;
+	min-width: 280px !important;
+	max-width: 280px !important;
+	flex: 0 0 280px !important;
+	height: 100%;
+	display: block;
+	background: #cbd9df;
+	overflow: hidden;
+	border-right: none;
+}
+
+/* Center column with header/top, scrollable middle, input/bottom */
+.chat-column {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+/* ---- Ant Design CSS ---- */
+
+.ant-layout-header,
+.ant-layout-footer {
+	padding: 0;
+	background: transparent;
+}
+
+.ant-layout-sider-children,
+.sider-content {
+	width: 100%;
+	height: 100%;
+	background-color: #d2e0e8;
+}
+
+.ant-layout,
+.ant-layout .ant-layout,
+.ant-layout .ant-layout-content {
+	background: #44778d !important;
+}
+
+.chat-input .ant-input-affix-wrapper-disabled,
+.chat-input .ant-input-disabled {
+	background-color: #ffffff !important;
+	border-color: #a8b7c0 !important;
+	opacity: 1;
+}
+
+.chat-input .ant-input-affix-wrapper {
+	background-color: #ffffff;
+	border: 1px solid #a8b7c0;
+	border-radius: 10px;
+	box-shadow: none;
+}
+
+.chat-input .ant-input-affix-wrapper .ant-input {
+	background: transparent;
+	border: none;
+	box-shadow: none;
+}
+
+.chat-input .ant-input-affix-wrapper .ant-input-suffix {
+	background: transparent;
+}
+
+.chat-input .ant-input-affix-wrapper {
+	background-color: transparent;
+}
+.chat-input .ant-input {
+	background-color: transparent;
+}
+
+.sidebar,
+.sider-content,
+.ant-layout-sider-children {
+	box-shadow: none;
+	border: 0;
+}

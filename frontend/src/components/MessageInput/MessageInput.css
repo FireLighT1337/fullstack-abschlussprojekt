@@ -1,0 +1,66 @@
+.message-input-row {
+	display: flex;
+	gap: 50px;
+	align-items: center;
+	padding: 10px 18px 0px 18px;
+}
+
+.upload-button {
+	min-width: 50px;
+	min-height: 5vh;
+}
+
+.ant-btn-primary.upload-button {
+	border: 1px solid rgba(0, 0, 0, 0.5);
+}
+
+.message-form {
+	width: 100%;
+}
+
+.message-form-item {
+	flex: 1;
+	margin-bottom: 0;
+	margin-top: 5px;
+}
+
+#send-button {
+	flex-basis: 10%;
+	margin-right: 10vw;
+	min-height: 5vh;
+	min-width: 10vh;
+	border: solid 1px gray;
+	border-radius: 10px;
+	background-color: #ffffff;
+	color: black;
+}
+
+#user-input {
+	flex: 1 1 auto;
+	flex-basis: 100%;
+	min-height: 3vh;
+	border-radius: 10px;
+	padding-left: 0.5vw;
+}
+
+.input-container {
+	background-color: #d2e0e8;
+	padding-bottom: 1vh;
+	width: 100%;
+}
+
+.ant-input::placeholder,
+.ant-input-textarea::placeholder {
+	color: rgba(0, 0, 0, 0.45);
+}
+
+.ant-input-outlined,
+.ant-input-affix-wrapper,
+.ant-input-affix-wrapper input {
+	background-color: #ffffff !important;
+}
+
+.ant-input-affix-wrapper-focused,
+.ant-input-affix-wrapper:focus-within {
+	box-shadow: none !important;
+}

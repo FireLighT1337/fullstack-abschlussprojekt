@@ -1,0 +1,261 @@
+.user {
+  font-weight: bold;
+  color: #44778d;
+}
+
+.bernd {
+  font-weight: bold;
+  color: #000000;
+}
+
+.timestamp {
+  font-size: 0.75rem;
+  margin-left: 0.5vw;
+}
+
+.own-message,
+.other-message {
+  max-width: min(72ch, 80%);
+  border-radius: 15px;
+  padding: 8px 12px;
+  margin: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* Bot messages can be wider since they contain tables, code blocks, etc. */
+.other-message {
+  max-width: min(85ch, 90%);
+}
+
+.own-message {
+  align-self: flex-end;
+  background-color: #ffffff;
+  border: 5px solid #ffffff;
+}
+
+.other-message {
+  align-self: flex-start;
+  background-color: #d2e0e8;
+  border: 5px solid #d2e0e8;
+}
+
+/* Scope all markdown element styling to inside message bubbles */
+.own-message .message-text,
+.other-message .message-text {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Headings inside messages */
+.own-message .message-text h1,
+.other-message .message-text h1 {
+  font-size: 1.25rem;
+  margin: 0.6em 0 0.4em;
+  line-height: 1.25;
+}
+.own-message .message-text h2,
+.other-message .message-text h2 {
+  font-size: 1.15rem;
+  margin: 0.6em 0 0.4em;
+  line-height: 1.25;
+}
+.own-message .message-text h3,
+.other-message .message-text h3 {
+  font-size: 1.05rem;
+  margin: 0.6em 0 0.4em;
+  line-height: 1.25;
+}
+
+/* Paragraph spacing */
+.own-message .message-text p,
+.other-message .message-text p {
+  margin: 0.5em 0;
+}
+
+/* Lists */
+.own-message .message-text ul,
+.own-message .message-text ol,
+.other-message .message-text ul,
+.other-message .message-text ol {
+  margin: 0.4em 0 0.4em 1.4em;
+}
+
+/* Task list checkboxes */
+.own-message .message-text li input[type="checkbox"],
+.other-message .message-text li input[type="checkbox"] {
+  margin-right: 6px;
+}
+
+/* Blockquote */
+.own-message .message-text blockquote,
+.other-message .message-text blockquote {
+  margin: 0.6em 0;
+  padding-left: 12px;
+  border-left: 3px solid #334155;
+  color: #333;
+}
+
+/* ===== TABLES ===== */
+.own-message .message-text .table-wrapper,
+.other-message .message-text .table-wrapper {
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 8px 0;
+}
+
+.own-message .message-text table,
+.other-message .message-text table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  display: table;
+  table-layout: auto; /* Let columns size based on content */
+}
+
+.own-message .message-text thead,
+.other-message .message-text thead {
+  display: table-header-group;
+}
+
+.own-message .message-text tbody,
+.other-message .message-text tbody {
+  display: table-row-group;
+}
+
+.own-message .message-text tr,
+.other-message .message-text tr {
+  display: table-row;
+}
+
+.own-message .message-text th,
+.own-message .message-text td,
+.other-message .message-text th,
+.other-message .message-text td {
+  border: 1px solid #a8b7c0;
+  padding: 8px 12px; /* More horizontal padding */
+  text-align: left;
+  vertical-align: top;
+  word-break: normal; /* Don't force-break words */
+  overflow-wrap: normal; /* Only break at natural points */
+  hyphens: none; /* No hyphenation */
+  white-space: normal; /* Allow wrapping but not forced */
+  min-width: 80px; /* Minimum cell width */
+}
+
+.own-message .message-text th,
+.other-message .message-text th {
+  background: rgba(0, 0, 0, 0.04);
+  font-weight: 700;
+  white-space: nowrap; /* Keep headers on one line */
+}
+
+.own-message .message-text td,
+.other-message .message-text td {
+  background: transparent;
+}
+
+/* Links */
+.own-message .message-text a,
+.other-message .message-text a {
+  color: #0b5cab;
+  text-decoration: underline;
+}
+
+.own-message .message-text a:hover,
+.other-message .message-text a:hover {
+  text-decoration: none;
+}
+
+/* Images */
+.own-message .message-text img,
+.other-message .message-text img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  display: block;
+  margin: 6px 0;
+}
+
+/* Horizontal rule */
+.own-message .message-text hr,
+.other-message .message-text hr {
+  border: none;
+  border-top: 1px solid #a8b7c0;
+  margin: 10px 0;
+}
+
+/* Inline code */
+.own-message .message-text code,
+.other-message .message-text code {
+  background: rgba(0, 0, 0, 0.07);
+  padding: 0 4px;
+  border-radius: 4px;
+  font-family: "PT Sans", sans-serif;
+  font-size: 0.92em;
+}
+
+/* Block code wrapper (used by custom CodeBlock renderer) */
+.own-message .message-text .code-block,
+.other-message .message-text .code-block {
+  margin-top: 8px;
+}
+
+/* Toolbar above code blocks */
+.own-message .message-text .code-toolbar,
+.other-message .message-text .code-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.06);
+  color: #333;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+/* Copy button */
+.own-message .message-text .copy-btn,
+.other-message .message-text .copy-btn {
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #a8b7c0;
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.own-message .message-text .copy-btn:hover,
+.other-message .message-text .copy-btn:hover {
+  background: #f3f6f8;
+}
+
+/* Pre/code block area */
+.own-message .message-text pre,
+.other-message .message-text pre {
+  overflow: auto;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.06);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  margin: 0;
+}
+
+.own-message .message-text pre code,
+.other-message .message-text pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.own-message .message-text > :first-child,
+.other-message .message-text > :first-child {
+  margin-top: 0 !important;
+}
+
+.own-message .message-text > :last-child,
+.other-message .message-text > :last-child {
+  margin-bottom: 0 !important;
+}

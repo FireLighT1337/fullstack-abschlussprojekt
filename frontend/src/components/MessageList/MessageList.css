@@ -1,0 +1,12 @@
+.message-container {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 12px;
+	padding: 16px 16px 24px;
+	flex: 1;
+	min-width: 60vh;
+	overflow: auto;
+	background-color: #44778d;
+	box-sizing: border-box;
+}
