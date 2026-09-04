@@ -70,6 +70,13 @@ export default function useChatData() {
   const activeId = state.activeId;
   const activeConversation = state.list.find((c) => c.id === activeId) || null;
 
+  // Persist the active conversation id across refreshes
+  useEffect(() => {
+    if (state.activeId && !isLocalId(state.activeId)) {
+      localStorage.setItem("activeConversationId", state.activeId);
+    }
+  }, [state.activeId]);
+
   // DEBUG: log state changes
   useEffect(() => {
     console.log("[DEBUG] State updated:", {
@@ -149,8 +156,22 @@ export default function useChatData() {
           switch (msg.type) {
             case "conversationList": {
               const list = msg.conversation_list || [];
-              console.log("[DEBUG] conversationList:", list);
               dispatch(initListAction(list));
+
+              const persistedId = localStorage.getItem("activeConversationId");
+              const persistedExists = list.some(
+                (c) => toIdString(c.conversation_id) === persistedId,
+              );
+
+              if (persistedExists) {
+                actionsRef.current.switchConversation(persistedId);
+              } else if (list.length > 0) {
+                actionsRef.current.switchConversation(
+                  toIdString(list[0].conversation_id),
+                );
+              } else {
+                actionsRef.current.addConversation();
+              }
               break;
             }
 
@@ -260,6 +281,13 @@ export default function useChatData() {
     const localId = makeLocalId();
     dispatch(switchConversationAction(localId));
   };
+
+  // Keep a stable ref to the latest versions so the bootstrap effect
+  // (which only runs once) can call current logic without re-running.
+  const actionsRef = useRef({ switchConversation, addConversation });
+  useEffect(() => {
+    actionsRef.current = { switchConversation, addConversation };
+  });
 
   const handleSend = (text) => {
     const messageText = text.trim();
