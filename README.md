@@ -8,7 +8,7 @@ A React-based web frontend + FastAPI backend for **B.E.R.N.D.**, an AI-powered c
 
 - ⚡ **Real-time chat** over WebSockets with automatic reconnection
 - 💬 **Multiple conversations** — create, switch between, and delete chat sessions
-- 📎 **File uploads** — send documents directly into the RAG knowledge base (PDF, Excel, PowerPoint, Word, JPG; max 50 MB)
+- 📎 **File uploads** — send documents directly into the RAG knowledge base (PDF, Excel, PowerPoint, Word, JPG; max 5 MB)
 - 📝 **Markdown rendering** with syntax highlighting in bot responses
 - 🔔 **Toast notifications** for connection status, errors, and upload confirmations
 - ☁️ **CI/CD** via Git push → Vercel auto-deploy
